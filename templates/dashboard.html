@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Deepfake Detection Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <header class="topbar">
+
+        <div class="brand">
+            AI Deepfake Detector
+        </div>
+
+        <div>
+            <span>Welcome, {{ username }}</span>
+
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                Logout
+            </a>
+        </div>
+
+    </header>
+
+    <main class="container">
+
+        <section class="welcome">
+
+           <h1>NEW DASHBOARD TEST 123</h1>
+
+            <p>
+                Upload a video to analyze whether it is REAL or FAKE.
+            </p>
+
+        </section>
+
+        <section class="stats">
+
+            <div class="stat-card">
+                <h3>Model Status</h3>
+
+                <p class="{{ 'success' if ready else 'danger' }}">
+                    {{ 'Model Ready' if ready else 'Model Not Available' }}
+                </p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Detection Method</h3>
+                <p>Long-Distance Attention</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Maximum Upload</h3>
+                <p>100 MB</p>
+            </div>
+
+        </section>
+
+        <section class="panel">
+
+            <h2>Upload Video</h2>
+
+            <p>Select an MP4, AVI, MOV or MKV video.</p>
+
+            <form method="POST" enctype="multipart/form-data">
+
+                <input
+                    type="file"
+                    name="video"
+                    accept=".mp4,.avi,.mov,.mkv,.mpeg,.mpg"
+                    required
+                >
+
+                <button type="submit" {% if not ready %}disabled{% endif %}>
+                    Analyze Video
+                </button>
+
+            </form>
+
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+
+        </section>
+
+        {% if result %}
+
+        <section class="panel result-panel">
+
+            <h2>Detection Result</h2>
+
+            <h3>Video: {{ result.filename }}</h3>
+
+            <div class="prediction {{ 'fake' if result.label == 'FAKE' else 'real' }}">
+                {{ result.label }}
+            </div>
+
+            <h3>
+                Prediction Confidence: {{ result.confidence }}%
+            </h3>
+
+            <!-- REAL RESULT -->
+
+            <div class="percentage-row">
+
+                <span>REAL</span>
+
+                <strong>{{ result.real }}%</strong>
+
+            </div>
+
+            <div class="progress">
+
+                <div class="real-bar dynamic-bar"
+                     data-width="{{ result.real }}">
+                </div>
+
+            </div>
+
+            <!-- FAKE RESULT -->
+
+            <div class="percentage-row">
+
+                <span>FAKE</span>
+
+                <strong>{{ result.fake }}%</strong>
+
+            </div>
+
+            <div class="progress">
+
+                <div class="fake-bar dynamic-bar"
+                     data-width="{{ result.fake }}">
+                </div>
+
+            </div>
+
+            <p class="small-text">
+                This is an AI model prediction, not a guarantee
+                of video authenticity. Results may be incorrect,
+                especially for videos unlike the training data.
+            </p>
+
+        </section>
+
+        {% endif %}
+
+        <section class="panel">
+
+            <h2>Recent Detection History</h2>
+
+            {% if history %}
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Video</th>
+                            <th>Prediction</th>
+                            <th>Confidence</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in history %}
+
+                        <tr>
+
+                            <td>{{ item.filename }}</td>
+
+                            <td class="{{ 'danger' if item.label == 'FAKE' else 'success' }}">
+                                {{ item.label }}
+                            </td>
+
+                            <td>{{ item.confidence }}%</td>
+
+                            <td>{{ item.date }}</td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <p>No videos analyzed yet.</p>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+    <footer>
+
+        MCA Project |
+        Deepfake Video Detection Using Long-Distance Attention
+
+    </footer>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const bars = document.querySelectorAll(".dynamic-bar");
+
+            bars.forEach(function (bar) {
+
+                let percentage = parseFloat(bar.dataset.width);
+
+                if (!Number.isFinite(percentage)) {
+                    percentage = 0;
+                }
+
+                percentage = Math.max(0, Math.min(100, percentage));
+
+                bar.style.width = percentage + "%";
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deepfake Video Detection</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="card">
+<h1>Deepfake Video Detection</h1>
+<p class="subtitle">CNN with Long-Distance Temporal Attention</p>
+<div class="status {{ 'ok' if ready else 'warn' }}">{{ 'Trained model is ready' if ready else 'Model not trained yet — run train.py first' }}</div>
+<form method="post" enctype="multipart/form-data">
+<label for="video">Select a video</label><input id="video" type="file" name="video" accept="video/*" required>
+<button type="submit" {% if not ready %}disabled{% endif %}>Analyze Video</button>
+</form>
+{% if result %}<section class="result"><h2>Prediction: {{ result.label }}</h2><p>Model confidence: {{ result.confidence }}%</p><small>Educational model output; not a guarantee of authenticity.</small></section>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<p class="note">Supported formats: MP4, AVI, MOV, MKV. Maximum upload size: 100 MB.</p>
+</main></body></html>

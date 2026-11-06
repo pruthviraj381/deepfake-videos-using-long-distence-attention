@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+
+<div class="login-card">
+    <div class="logo">✓</div>
+    <h1>Logged Out Successfully</h1>
+    <p class="subtitle">Thank you for using Deepfake Detection.</p>
+    <a href="{{ url_for('login') }}" class="login-link">Login Again</a>
+</div>
+
+</body>
+</html>
