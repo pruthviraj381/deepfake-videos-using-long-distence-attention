@@ -7,3 +7,18 @@ dataset/**/*.mp4
 dataset/**/*.avi
 dataset/**/*.mov
 dataset/**/*.mkv
+# Downloaded video datasets
+FaceForensics_fake/
+FaceForensics_original/
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.mpeg
+*.mpg
+
+# Python cache and temporary files
+__pycache__/
+*.pyc
