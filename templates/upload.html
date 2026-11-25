@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Video - DeepShield AI{% endblock %}
+{% block page_title %}Deepfake Video Detection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        {% if not model_trained %}
+        <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Model Not Trained Yet</h6>
+                <p class="small mb-0">
+                    The PyTorch Long-Distance Attention model checkpoint does not exist yet. You can still upload videos, but predictions require training the model first in the 
+                    {% if session.get('role') == 'admin' %}
+                        <a href="{{ url_for('admin_training') }}" class="alert-link">Model Training Console</a>.
+                    {% else %}
+                        Admin portal.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card-custom p-4 p-md-5">
+            <div class="text-center mb-4">
+                <span class="badge bg-primary-subtle text-primary px-3 py-1 mb-2 fw-bold text-uppercase">AI Video Inspector</span>
+                <h3 class="fw-bold">Upload Video for Analysis</h3>
+                <p class="text-secondary small max-w-500 mx-auto">
+                    Submit an MP4, AVI, or MOV video file. The system extracts 4 temporal facial frames at 64&times;64 resolution and evaluates synthetic manipulation via Long-Distance Attention.
+                </p>
+            </div>
+
+            <form method="POST" action="{{ url_for('upload_video') }}" enctype="multipart/form-data" id="videoUploadForm">
+                <!-- Local File Drag & Drop -->
+                <div id="section-file">
+                    <div class="dropzone-container" id="dropzone">
+                        <div class="dropzone-icon">
+                            <i class="bi bi-cloud-arrow-up-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">Drag & Drop your video file here</h5>
+                        <p class="text-muted small mb-3">or click to browse from your computer</p>
+                        
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <span class="badge bg-white text-dark border px-2 py-1">.MP4</span>
+                            <span class="badge bg-white text-dark border px-2 py-1">.AVI</span>
+                            <span class="badge bg-white text-dark border px-2 py-1">.MOV</span>
+                            <span class="badge bg-light text-muted border px-2 py-1">Max 50 MB</span>
+                            <span class="badge bg-primary text-white border px-2 py-1">64 &times; 64 Scale</span>
+                        </div>
+
+                        <input type="file" name="video_file" id="video_file" accept=".mp4,.avi,.mov" class="d-none" required>
+                    </div>
+
+                    <!-- Selected File Preview Card -->
+                    <div class="file-preview-card" id="filePreview" style="display: none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="stat-icon blue" style="width: 42px; height: 42px; font-size: 1.25rem;">
+                                <i class="bi bi-file-play-fill"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-truncate" id="fileNameDisplay" style="max-width: 320px;">video.mp4</div>
+                                <small class="text-muted" id="fileSizeDisplay">0 MB</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeFileBtn">
+                            <i class="bi bi-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Execution Notice -->
+                <div class="d-flex align-items-center gap-2 text-muted small my-3 px-1">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Frames are cropped to 64&times;64 and analyzed in PyTorch CPU memory for low RAM footprint.</span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary-custom w-100 justify-content-center py-3 fs-5 mt-2" id="submitBtn">
+                    <i class="bi bi-search me-2"></i> Run Deepfake Detection
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Animated Processing Modal -->
+<div class="processing-overlay" id="processingModal">
+    <div class="processing-card">
+        <div class="spinner-pulse"></div>
+        <h4 class="fw-bold mb-1">Analyzing Video</h4>
+        <p class="text-secondary small mb-3">Running Long-Distance Attention Detection Pipeline</p>
+
+        <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary w-100"></div>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-item active" id="step-1">
+                <i class="bi bi-arrow-right-circle me-2"></i> Validating format & file integrity
+            </div>
+            <div class="step-item" id="step-2">
+                <i class="bi bi-circle me-2"></i> Uniformly extracting 4 temporal frames
+            </div>
+            <div class="step-item" id="step-3">
+                <i class="bi bi-circle me-2"></i> Detecting & cropping facial landmarks (64&times;64)
+            </div>
+            <div class="step-item" id="step-4">
+                <i class="bi bi-circle me-2"></i> Encoding spatial CNN features & positional order
+            </div>
+            <div class="step-item" id="step-5">
+                <i class="bi bi-circle me-2"></i> Evaluating Long-Distance Multi-Head Attention
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

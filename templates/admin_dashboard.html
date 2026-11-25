@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Dashboard - DeepShield AI{% endblock %}
+{% block page_title %}Administrator Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Stats Row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="card-custom stat-card">
+            <div>
+                <div class="stat-label">Registered Users</div>
+                <div class="stat-number">{{ stats.total_users }}</div>
+                <small class="text-secondary">Standard accounts</small>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-people-fill"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card-custom stat-card">
+            <div>
+                <div class="stat-label">Videos Analyzed</div>
+                <div class="stat-number">{{ stats.total_predictions }}</div>
+                <small class="text-secondary">System-wide inferences</small>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-camera-reels-fill"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card-custom stat-card real-card">
+            <div>
+                <div class="stat-label">Genuine Videos</div>
+                <div class="stat-number text-success">{{ stats.total_real }}</div>
+                <small class="text-secondary">Classified as REAL</small>
+            </div>
+            <div class="stat-icon green">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card-custom stat-card fake-card">
+            <div>
+                <div class="stat-label">Manipulated Videos</div>
+                <div class="stat-number text-danger">{{ stats.total_fake }}</div>
+                <small class="text-secondary">Classified as FAKE</small>
+            </div>
+            <div class="stat-icon red">
+                <i class="bi bi-shield-x"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model & Dataset Section -->
+<div class="row g-4 mb-4">
+    <!-- Model Status & Training Metrics -->
+    <div class="col-lg-6">
+        <div class="card-custom p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-cpu-fill text-primary me-2"></i>AI Model Training Status
+                </h5>
+                {% if model_trained %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> TRAINED & ACTIVE</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle-fill me-1"></i> UNTRAINED</span>
+                {% endif %}
+            </div>
+
+            {% if recent_training %}
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded text-center">
+                            <small class="text-secondary text-uppercase fw-bold">Validation Accuracy</small>
+                            <div class="fs-3 fw-bold text-success">{{ recent_training.val_accuracy }}%</div>
+                            <small class="text-muted">Best validation</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded text-center">
+                            <small class="text-secondary text-uppercase fw-bold">Training Accuracy</small>
+                            <div class="fs-3 fw-bold text-primary">{{ recent_training.train_accuracy }}%</div>
+                            <small class="text-muted">Epoch {{ recent_training.epochs }}</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded text-center">
+                            <small class="text-secondary text-uppercase fw-bold">Validation Loss</small>
+                            <div class="fs-4 fw-bold text-dark">{{ recent_training.val_loss }}</div>
+                            <small class="text-muted">Cross-Entropy</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded text-center">
+                            <small class="text-secondary text-uppercase fw-bold">Training Loss</small>
+                            <div class="fs-4 fw-bold text-dark">{{ recent_training.train_loss }}</div>
+                            <small class="text-muted">Batch Size: {{ recent_training.batch_size }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="small text-secondary mb-3">
+                    <i class="bi bi-calendar3 me-1"></i> Last trained on: <strong>{{ recent_training.created_at }}</strong>
+                </div>
+            {% else %}
+                <div class="p-4 text-center bg-light rounded mb-3">
+                    <i class="bi bi-cpu text-muted fs-1 mb-2 d-block"></i>
+                    <p class="mb-1 fw-bold">No completed training runs recorded yet.</p>
+                    <p class="small text-muted mb-0">Initiate training to produce <code>checkpoints/best_model.pth</code></p>
+                </div>
+            {% endif %}
+
+            <div class="mt-auto pt-2">
+                <a href="{{ url_for('admin_training') }}" class="btn btn-primary-custom w-100 justify-content-center">
+                    <i class="bi bi-arrow-repeat me-1"></i> Open Model Training Console
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dataset Distribution Overview -->
+    <div class="col-lg-6">
+        <div class="card-custom p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-folder-fill text-warning me-2"></i>Dataset Split Distribution
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary">{{ dataset_counts.total }} Total Videos</span>
+            </div>
+
+            <p class="text-secondary small mb-3">
+                Directory: <code>dataset/train</code>, <code>dataset/val</code>, <code>dataset/test</code>. Isolated splits prevent data leakage during validation.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm text-center mb-4">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dataset Split</th>
+                            <th class="text-success"><i class="bi bi-check-circle me-1"></i>Real Videos</th>
+                            <th class="text-danger"><i class="bi bi-x-circle me-1"></i>Fake Videos</th>
+                            <th>Total Samples</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold text-start ps-3">Training (train/)</td>
+                            <td><span class="badge bg-success-subtle text-success">{{ dataset_counts.train.real }}</span></td>
+                            <td><span class="badge bg-danger-subtle text-danger">{{ dataset_counts.train.fake }}</span></td>
+                            <td class="fw-bold">{{ dataset_counts.train.real + dataset_counts.train.fake }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-start ps-3">Validation (val/)</td>
+                            <td><span class="badge bg-success-subtle text-success">{{ dataset_counts.val.real }}</span></td>
+                            <td><span class="badge bg-danger-subtle text-danger">{{ dataset_counts.val.fake }}</span></td>
+                            <td class="fw-bold">{{ dataset_counts.val.real + dataset_counts.val.fake }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-start ps-3">Testing (test/)</td>
+                            <td><span class="badge bg-success-subtle text-success">{{ dataset_counts.test.real }}</span></td>
+                            <td><span class="badge bg-danger-subtle text-danger">{{ dataset_counts.test.fake }}</span></td>
+                            <td class="fw-bold">{{ dataset_counts.test.real + dataset_counts.test.fake }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2 mt-auto">
+                <a href="{{ url_for('admin_training') }}" class="btn btn-outline-secondary w-50 justify-content-center">
+                    <i class="bi bi-upload me-1"></i> Add Dataset Videos
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary w-50 justify-content-center">
+                    <i class="bi bi-people me-1"></i> Manage Users
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Recent Predictions -->
+<div class="card-custom">
+    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold mb-0"><i class="bi bi-list-check me-2 text-primary"></i>System-Wide Prediction Activity</h5>
+        <a href="{{ url_for('admin_history') }}" class="btn btn-sm btn-outline-secondary">View Full History</a>
+    </div>
+
+    {% if all_recent %}
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Video File</th>
+                    <th>Source</th>
+                    <th>Prediction</th>
+                    <th>Confidence</th>
+                    <th>Time</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pred in all_recent %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">{{ pred.username or 'Guest/User' }}</span>
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;">
+                            {{ pred.original_name }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            {{ pred.source_type|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if pred.prediction_label == 'REAL' %}
+                            <span class="badge-real"><i class="bi bi-check-circle-fill"></i> REAL</span>
+                        {% else %}
+                            <span class="badge-fake"><i class="bi bi-exclamation-triangle-fill"></i> FAKE</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong class="{{ 'text-success' if pred.prediction_label == 'REAL' else 'text-danger' }}">
+                            {{ pred.real_confidence if pred.prediction_label == 'REAL' else pred.fake_confidence }}%
+                        </strong>
+                    </td>
+                    <td><small class="text-muted">{{ pred.processing_time }}s</small></td>
+                    <td><small class="text-secondary">{{ pred.created_at }}</small></td>
+                    <td>
+                        <a href="{{ url_for('prediction_result', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center text-muted">
+        No predictions performed yet in the system.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

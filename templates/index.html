@@ -1,16 +1,242 @@
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deepfake Video Detection</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
-<body><main class="card">
-<h1>Deepfake Video Detection</h1>
-<p class="subtitle">CNN with Long-Distance Temporal Attention</p>
-<div class="status {{ 'ok' if ready else 'warn' }}">{{ 'Trained model is ready' if ready else 'Model not trained yet — run train.py first' }}</div>
-<form method="post" enctype="multipart/form-data">
-<label for="video">Select a video</label><input id="video" type="file" name="video" accept="video/*" required>
-<button type="submit" {% if not ready %}disabled{% endif %}>Analyze Video</button>
-</form>
-{% if result %}<section class="result"><h2>Prediction: {{ result.label }}</h2><p>Model confidence: {{ result.confidence }}%</p><small>Educational model output; not a guarantee of authenticity.</small></section>{% endif %}
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
-<p class="note">Supported formats: MP4, AVI, MOV, MKV. Maximum upload size: 100 MB.</p>
-</main></body></html>
+{% extends "base.html" %}
+
+{% block title %}DeepShield AI - Deepfake Video Detection using Long-Distance Attention{% endblock %}
+
+{% block public_content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-badge">
+            <i class="bi bi-patch-check-fill"></i> MCA Final Year Academic Project
+        </div>
+        <h1 class="hero-title">
+            Detection of Deepfake Videos Using<br>
+            <span style="background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Long-Distance Attention</span>
+        </h1>
+        <p class="hero-subtitle">
+            An advanced AI web application utilizing Convolutional Neural Networks, Temporal Positional Encoding, and Multi-Head Long-Distance Attention to expose subtle facial manipulation artifacts across video frames.
+        </p>
+
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('upload_video' if session.get('user_id') else 'login') }}" class="btn-primary-custom px-4 py-3 fs-5">
+                <i class="bi bi-shield-check"></i> Analyze Video Now
+            </a>
+            <a href="{{ url_for('admin_login') }}" class="btn-outline-custom px-4 py-3 fs-5 bg-white text-dark">
+                <i class="bi bi-lock-fill"></i> Admin Portal
+            </a>
+        </div>
+
+        <!-- Model Status Banner -->
+        <div class="mt-4">
+            {% if model_trained %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                    <i class="bi bi-check-circle-fill me-1"></i> AI Model Active & Trained (checkpoints/best_model.pth)
+                </span>
+            {% else %}
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 fs-6">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> AI Model Not Trained Yet &mdash; Admin Training Required
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Stats Row -->
+<div class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom stat-card">
+                <div>
+                    <div class="stat-label">Registered Users</div>
+                    <div class="stat-number">{{ stats.total_users }}</div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom stat-card">
+                <div>
+                    <div class="stat-label">Videos Analyzed</div>
+                    <div class="stat-number">{{ stats.total_predictions }}</div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="bi bi-film"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom stat-card real-card">
+                <div>
+                    <div class="stat-label">Real Videos</div>
+                    <div class="stat-number text-success">{{ stats.total_real }}</div>
+                </div>
+                <div class="stat-icon green">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom stat-card fake-card">
+                <div>
+                    <div class="stat-label">Fake Deepfakes</div>
+                    <div class="stat-number text-danger">{{ stats.total_fake }}</div>
+                </div>
+                <div class="stat-icon red">
+                    <i class="bi bi-shield-x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Architecture Pipeline -->
+<div class="container my-5">
+    <div class="card-custom p-4 p-lg-5">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary-subtle text-primary px-3 py-2 fw-bold text-uppercase">System Pipeline</span>
+            <h2 class="fw-bold mt-2">How Long-Distance Attention Deepfake Detection Works</h2>
+            <p class="text-secondary max-w-600 mx-auto">
+                Unlike traditional single-frame CNNs that fail on temporal inconsistencies, our architecture captures long-distance relationships between distant frames across the video.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">01</span>
+                        <h5 class="fw-bold mb-0">Video Ingestion</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        Accepts MP4, AVI, and MOV video uploads. Validates video stream integrity, format, and 50MB file size limit.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">02</span>
+                        <h5 class="fw-bold mb-0">Face Extraction & Crop</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        OpenCV Haar Cascade detects primary facial landmarks. Crops face with boundary margins to retain manipulation blending seams, resized to 64&times;64.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">03</span>
+                        <h5 class="fw-bold mb-0">CNN Frame Encoder</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        4-layer Convolutional feature extractor with BatchNorm and ReLU transforms each frame into an embedding vector ($d_{model}=64$).
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">04</span>
+                        <h5 class="fw-bold mb-0">Positional Encoding</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        Learnable temporal positional embeddings encode the sequential order and temporal distance of frames across the entire video timeline.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">05</span>
+                        <h5 class="fw-bold mb-0">Long-Distance Attention</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        Multi-Head Self-Attention layers calculate temporal correlation across distant frames, uncovering unnatural warping, blending artifacts, and blinking anomalies.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="badge bg-primary rounded-circle p-2 fs-6">06</span>
+                        <h5 class="fw-bold mb-0">Softmax Classification</h5>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        Feed-Forward layers and Softmax activation produce verified probabilities for REAL and FAKE categories, complete with confidence percentages.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Technical Highlights -->
+<div class="container my-5">
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-6">
+            <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 fw-bold text-uppercase">Academic Excellence</span>
+            <h2 class="fw-bold mt-2">Optimized for Low-Resource Environments (4GB RAM)</h2>
+            <p class="text-secondary">
+                Designed to run efficiently on standard consumer laptops without requiring expensive GPU hardware:
+            </p>
+            <ul class="list-unstyled">
+                <li class="mb-2 d-flex align-items-start gap-2">
+                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                    <span><strong>Pure CPU Execution:</strong> PyTorch CPU tensor operations with minimal memory consumption.</span>
+                </li>
+                <li class="mb-2 d-flex align-items-start gap-2">
+                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                    <span><strong>Long-Distance Uniform Sampling:</strong> 4 representative frames sampled across the timeline instead of redundant consecutive frames.</span>
+                </li>
+                <li class="mb-2 d-flex align-items-start gap-2">
+                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                    <span><strong>64 &times; 64 Normalized Resolution:</strong> Fast matrix multiplication while preserving crucial facial boundary artifacts.</span>
+                </li>
+                <li class="mb-2 d-flex align-items-start gap-2">
+                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                    <span><strong>100% Genuine Predictions:</strong> Output generated strictly by genuine forward pass through the trained PyTorch neural network.</span>
+                </li>
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-custom p-4 bg-dark text-white border-0" style="background-color: var(--bg-secondary) !important;">
+                <h5 class="fw-bold text-info mb-3"><i class="bi bi-terminal-fill me-2"></i>Technology Stack</h5>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-2 border border-secondary rounded">
+                            <div class="text-muted small">Deep Learning</div>
+                            <div class="fw-bold text-light">PyTorch & Torchvision</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border border-secondary rounded">
+                            <div class="text-muted small">Computer Vision</div>
+                            <div class="fw-bold text-light">OpenCV (cv2)</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border border-secondary rounded">
+                            <div class="text-muted small">Backend Framework</div>
+                            <div class="fw-bold text-light">Python Flask 3</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border border-secondary rounded">
+                            <div class="text-muted small">Database</div>
+                            <div class="fw-bold text-light">SQLite3 Database</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Model Training Console - DeepShield AI{% endblock %}
+{% block page_title %}Model Training & Dataset Management{% endblock %}
+
+{% block content %}
+<!-- Top Dataset Counters -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card-custom p-3 border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Training Set (train/)</div>
+                    <div class="fs-4 fw-bold mt-1">
+                        <span class="text-success">{{ dataset_counts.train.real }} Real</span> / 
+                        <span class="text-danger">{{ dataset_counts.train.fake }} Fake</span>
+                    </div>
+                </div>
+                <div class="stat-icon blue" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="bi bi-collection-play-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom p-3 border-start border-info border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Validation Set (val/)</div>
+                    <div class="fs-4 fw-bold mt-1">
+                        <span class="text-success">{{ dataset_counts.val.real }} Real</span> / 
+                        <span class="text-danger">{{ dataset_counts.val.fake }} Fake</span>
+                    </div>
+                </div>
+                <div class="stat-icon amber" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom p-3 border-start border-secondary border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Testing Set (test/)</div>
+                    <div class="fs-4 fw-bold mt-1">
+                        <span class="text-success">{{ dataset_counts.test.real }} Real</span> / 
+                        <span class="text-danger">{{ dataset_counts.test.fake }} Fake</span>
+                    </div>
+                </div>
+                <div class="stat-icon green" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="bi bi-patch-question-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Training Control Console -->
+<div class="row g-4 mb-4">
+    <!-- Live Training Control & Monitor -->
+    <div class="col-lg-7">
+        <div class="card-custom p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-play-circle-fill text-primary me-2"></i>Long-Distance Attention Trainer
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary">PyTorch CPU Execution</span>
+            </div>
+
+            <!-- Parameters Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-secondary">Epochs</label>
+                    <input type="number" id="trainEpochs" class="form-control" value="5" min="1" max="50">
+                    <small class="text-muted">Recommended: 3-5 on CPU</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-secondary">Batch Size</label>
+                    <select id="trainBatchSize" class="form-select">
+                        <option value="2" selected>2 (Low RAM - Safe)</option>
+                        <option value="4">4 (Standard 4GB RAM)</option>
+                    </select>
+                    <small class="text-muted">Small batch prevents OOM</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-secondary">Learning Rate</label>
+                    <input type="number" id="trainLr" class="form-control" value="0.0003" step="0.0001">
+                    <small class="text-muted">Adam Optimizer</small>
+                </div>
+            </div>
+
+            <!-- Start Training Button -->
+            <button class="btn btn-primary-custom w-100 justify-content-center py-2 fs-6 mb-4" id="startTrainingBtn" {% if status.is_training %}disabled{% endif %}>
+                <i class="bi bi-play-circle-fill me-2"></i>
+                {{ 'Training in Progress...' if status.is_training else 'Start Model Training' }}
+            </button>
+
+            <!-- Live Progress Bar -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold small text-secondary">Training Progress</span>
+                    <span class="badge bg-primary" id="trainingProgressText">0%</span>
+                </div>
+                <div class="progress" style="height: 14px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="trainingProgressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted mt-1 d-block" id="trainingStatusMessage">{{ status.status_message or 'Ready to begin' }}</small>
+            </div>
+
+            <!-- Live Metrics Badges -->
+            <div class="row g-2 text-center mb-3">
+                <div class="col-3">
+                    <div class="p-2 border rounded bg-light">
+                        <small class="text-secondary d-block fw-semibold">Train Loss</small>
+                        <span class="fw-bold fs-6" id="liveTrainLoss">0.0000</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 border rounded bg-light">
+                        <small class="text-secondary d-block fw-semibold">Train Acc</small>
+                        <span class="fw-bold fs-6 text-primary" id="liveTrainAcc">0.0%</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 border rounded bg-light">
+                        <small class="text-secondary d-block fw-semibold">Val Loss</small>
+                        <span class="fw-bold fs-6" id="liveValLoss">0.0000</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 border rounded bg-light">
+                        <small class="text-secondary d-block fw-semibold">Val Acc</small>
+                        <span class="fw-bold fs-6 text-success" id="liveValAcc">0.0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Epoch Table -->
+            <div class="table-responsive border rounded" style="max-height: 180px; overflow-y: auto;">
+                <table class="table table-sm table-striped mb-0 text-center small">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Epoch</th>
+                            <th>Train Loss</th>
+                            <th>Train Acc</th>
+                            <th>Val Loss</th>
+                            <th>Val Acc</th>
+                        </tr>
+                    </thead>
+                    <tbody id="epochHistoryTableBody">
+                        <tr>
+                            <td colspan="5" class="text-muted py-3">Epoch results will appear here during training.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Dataset Videos Form -->
+    <div class="col-lg-5">
+        <div class="card-custom p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h5 class="fw-bold mb-3 border-bottom pb-2">
+                    <i class="bi bi-cloud-upload-fill text-primary me-2"></i>Upload Dataset Video
+                </h5>
+                <p class="text-secondary small mb-3">
+                    Add new video samples directly to dataset splits to expand the training repository.
+                </p>
+
+                <form method="POST" action="{{ url_for('admin_dataset_upload') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Ground Truth Category</label>
+                        <select name="category" class="form-select" required>
+                            <option value="real">REAL (Authentic Human Video)</option>
+                            <option value="fake">FAKE (Manipulated / Deepfake Video)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Target Dataset Split</label>
+                        <select name="split" class="form-select" required>
+                            <option value="train" selected>train/ (Training Set)</option>
+                            <option value="val">val/ (Validation Set)</option>
+                            <option value="test">test/ (Testing Set)</option>
+                        </select>
+                        <small class="text-muted">Keeps evaluation data strictly isolated from training</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Select Video File</label>
+                        <input type="file" name="video_file" class="form-control" accept=".mp4,.avi,.mov" required>
+                        <small class="text-muted">Supports MP4, AVI, MOV formats (Max 50MB)</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary w-100 justify-content-center py-2">
+                        <i class="bi bi-plus-circle me-1"></i> Add Video to Dataset
+                    </button>
+                </form>
+            </div>
+
+            <!-- Checkpoint Info -->
+            <div class="alert alert-light border small mt-3 mb-0">
+                <i class="bi bi-hdd-fill text-primary me-1"></i>
+                <strong>Checkpoint Destination:</strong><br>
+                <code>checkpoints/best_model.pth</code><br>
+                The model with highest validation accuracy is automatically saved.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Past Training Runs Log -->
+<div class="card-custom">
+    <div class="p-3 border-bottom">
+        <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historical Model Training Sessions</h5>
+    </div>
+
+    {% if history %}
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Run ID</th>
+                    <th>Date & Time</th>
+                    <th>Epochs</th>
+                    <th>Batch Size</th>
+                    <th>Train Acc</th>
+                    <th>Val Acc</th>
+                    <th>Train Loss</th>
+                    <th>Val Loss</th>
+                    <th>Checkpoint</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in history %}
+                <tr>
+                    <td class="fw-bold">#{{ run.id }}</td>
+                    <td><small class="text-secondary">{{ run.created_at }}</small></td>
+                    <td>{{ run.epochs }}</td>
+                    <td>{{ run.batch_size }}</td>
+                    <td class="text-primary fw-semibold">{{ run.train_accuracy }}%</td>
+                    <td class="text-success fw-bold">{{ run.val_accuracy }}%</td>
+                    <td><small>{{ run.train_loss }}</small></td>
+                    <td><small>{{ run.val_loss }}</small></td>
+                    <td><code>best_model.pth</code></td>
+                    <td>
+                        <span class="badge bg-success-subtle text-success">
+                            <i class="bi bi-check-circle me-1"></i> {{ run.status|upper }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center text-muted">
+        No past training sessions logged. Use the console above to train the model.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

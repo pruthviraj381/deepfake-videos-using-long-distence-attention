@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Result - DeepShield AI{% endblock %}
+{% block page_title %}Deepfake Detection Result{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <!-- Top Result Header Banner -->
+        <div class="card-custom p-4 p-md-5 mb-4 text-center">
+            <span class="badge bg-secondary-subtle text-secondary px-3 py-1 mb-3 text-uppercase fw-bold">Classification Verdict</span>
+
+            <div class="mb-3">
+                {% if prediction.prediction_label == 'REAL' %}
+                    <div class="badge-real-lg">
+                        <i class="bi bi-shield-fill-check"></i> PREDICTED AS REAL
+                    </div>
+                {% else %}
+                    <div class="badge-fake-lg">
+                        <i class="bi bi-shield-fill-x"></i> PREDICTED AS FAKE
+                    </div>
+                {% endif %}
+            </div>
+
+            <p class="fs-5 text-secondary mb-4">
+                {% if prediction.prediction_label == 'REAL' %}
+                    The neural network identified consistent temporal facial features and natural movement with no synthetic boundary manipulation artifacts.
+                {% else %}
+                    The Long-Distance Attention mechanism detected temporal inconsistencies, boundary blending seams, or unnatural facial warping across distant frames.
+                {% endif %}
+            </p>
+
+            <!-- Dual Confidence Gauges / Progress Bars -->
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <!-- Real Confidence Bar -->
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar-header">
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> REAL Confidence</span>
+                            <span class="text-success fw-bold">{{ prediction.real_confidence }}%</span>
+                        </div>
+                        <div class="confidence-progress">
+                            <div class="progress-bar progress-bar-real" role="progressbar" style="width: {{ prediction.real_confidence }}%;" aria-valuenow="{{ prediction.real_confidence }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fake Confidence Bar -->
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar-header">
+                            <span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> FAKE Confidence</span>
+                            <span class="text-danger fw-bold">{{ prediction.fake_confidence }}%</span>
+                        </div>
+                        <div class="confidence-progress">
+                            <div class="progress-bar progress-bar-fake" role="progressbar" style="width: {{ prediction.fake_confidence }}%;" aria-valuenow="{{ prediction.fake_confidence }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Frame Breakdown & Video Details Row -->
+        <div class="row g-4 mb-4">
+            <!-- 4-Frame Facial Montage Preview -->
+            <div class="col-lg-7">
+                <div class="card-custom p-4 h-100">
+                    <h5 class="fw-bold mb-2">
+                        <i class="bi bi-images text-primary me-2"></i>Long-Distance Facial Frame Sequence
+                    </h5>
+                    <p class="text-secondary small mb-3">
+                        Uniformly sampled frames across the video timeline. Faces cropped via OpenCV Haar Cascade and normalized to 64&times;64 resolution.
+                    </p>
+
+                    {% if prediction.preview_image %}
+                        <div class="frame-montage-container mb-3 text-center">
+                            <img src="{{ url_for('serve_preview', filename=prediction.preview_image) }}" alt="Extracted Facial Frames" class="frame-montage-img img-fluid">
+                            <div class="d-flex justify-content-between text-muted small mt-2 px-2">
+                                <span>Frame 1 (Start)</span>
+                                <span>Frame 2 (33%)</span>
+                                <span>Frame 3 (66%)</span>
+                                <span>Frame 4 (End)</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="p-4 bg-light rounded text-center text-muted mb-3">
+                            <i class="bi bi-camera-video-off fs-1 d-block mb-2"></i>
+                            Preview image not available for this record.
+                        </div>
+                    {% endif %}
+
+                    <!-- Video playback preview if local upload -->
+                    {% if prediction.filename %}
+                        <div class="border rounded p-2 bg-light">
+                            <small class="text-secondary fw-semibold d-block mb-1">
+                                <i class="bi bi-play-circle me-1"></i> Video Playback Preview:
+                            </small>
+                            <video controls class="w-100 rounded" style="max-height: 240px; background: #000;">
+                                <source src="{{ url_for('serve_upload', filename=prediction.filename) }}" type="video/mp4">
+                                Your browser does not support HTML5 video tag.
+                            </video>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Analysis Metadata & Technical Summary -->
+            <div class="col-lg-5">
+                <div class="card-custom p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-3 border-bottom pb-2">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Analysis Metadata
+                        </h5>
+
+                        <ul class="list-group list-group-flush small">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Filename</span>
+                                <span class="fw-bold text-truncate" style="max-width: 180px;">{{ prediction.original_name }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Source Type</span>
+                                <span class="badge bg-light text-dark border">{{ prediction.source_type|upper }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Analysis Date & Time</span>
+                                <span class="fw-semibold">{{ prediction.created_at }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Processing Time</span>
+                                <span class="badge bg-primary-subtle text-primary fw-bold">{{ prediction.processing_time }} seconds</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Frames Analyzed</span>
+                                <span class="fw-semibold">{{ prediction.frames_analyzed }} frames (Long-Distance)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Target Resolution</span>
+                                <span class="fw-semibold">64 &times; 64 pixels</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">AI Model Architecture</span>
+                                <span class="fw-semibold text-end">CNN + Multi-Head Attention</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Execution Hardware</span>
+                                <span class="badge bg-secondary-subtle text-secondary">CPU Inference</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary">Processing Status</span>
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="bi bi-check-circle me-1"></i> COMPLETED
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                        <button onclick="window.print()" class="btn btn-outline-secondary w-50">
+                            <i class="bi bi-printer me-1"></i> Print Report
+                        </button>
+                        <a href="{{ url_for('upload_video') }}" class="btn btn-primary-custom w-50 justify-content-center">
+                            <i class="bi bi-plus-circle me-1"></i> New Video
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="{{ url_for('prediction_history') }}" class="text-secondary text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Prediction History
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

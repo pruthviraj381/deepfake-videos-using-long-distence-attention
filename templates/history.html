@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'System Prediction History' if is_admin else 'My Prediction History' }} - DeepShield AI{% endblock %}
+{% block page_title %}{{ 'System-Wide Predictions' if is_admin else 'My Video Prediction History' }}{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="p-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h5 class="fw-bold mb-1">
+                <i class="bi bi-clock-history text-primary me-2"></i>
+                {{ 'All Platform Predictions' if is_admin else 'Completed Video Inferences' }}
+            </h5>
+            <p class="text-secondary small mb-0">
+                Detailed audit trail of Deepfake Video Detection analyses with confidence scores and timestamps.
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="historySearch" class="form-control form-control-sm" placeholder="Filter by filename..." style="max-width: 240px;">
+            <a href="{{ url_for('upload_video') }}" class="btn btn-sm btn-primary-custom text-nowrap">
+                <i class="bi bi-plus-circle me-1"></i> New Analysis
+            </a>
+        </div>
+    </div>
+
+    {% if history %}
+    <div class="table-responsive">
+        <table class="table-custom" id="historyTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    {% if is_admin %}<th>User</th>{% endif %}
+                    <th>Video Name</th>
+                    <th>Source</th>
+                    <th>Prediction</th>
+                    <th>Real %</th>
+                    <th>Fake %</th>
+                    <th>Frames</th>
+                    <th>Time</th>
+                    <th>Date & Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td class="text-muted small">{{ loop.index }}</td>
+                    {% if is_admin %}
+                    <td>
+                        <span class="fw-bold">{{ item.username or 'User #' ~ item.user_id }}</span>
+                        {% if item.email %}<small class="text-muted d-block">{{ item.email }}</small>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td>
+                        <div class="fw-semibold text-truncate" style="max-width: 220px;" title="{{ item.original_name }}">
+                            <i class="bi bi-file-earmark-play text-primary me-1"></i>
+                            {{ item.original_name }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi {{ 'bi-globe' if item.source_type == 'url' else 'bi-upload' }} me-1"></i>
+                            {{ item.source_type|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if item.prediction_label == 'REAL' %}
+                            <span class="badge-real"><i class="bi bi-check-circle-fill"></i> REAL</span>
+                        {% else %}
+                            <span class="badge-fake"><i class="bi bi-exclamation-triangle-fill"></i> FAKE</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="text-success fw-bold">{{ item.real_confidence }}%</span>
+                    </td>
+                    <td>
+                        <span class="text-danger fw-bold">{{ item.fake_confidence }}%</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary">{{ item.frames_analyzed }}f</span>
+                    </td>
+                    <td>
+                        <small class="text-muted">{{ item.processing_time }}s</small>
+                    </td>
+                    <td>
+                        <small class="text-secondary">{{ item.created_at }}</small>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('prediction_result', prediction_id=item.id) }}" class="btn btn-sm btn-outline-primary text-nowrap">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+        <i class="bi bi-inbox fs-1 mb-2 d-block"></i>
+        <h6 class="fw-bold">No prediction records found</h6>
+        <p class="small text-muted mb-3">Upload a video to test the Long-Distance Attention model.</p>
+        <a href="{{ url_for('upload_video') }}" class="btn btn-sm btn-primary-custom">
+            <i class="bi bi-upload me-1"></i> Upload Video
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Client-side quick filter for history table
+    const searchInput = document.getElementById('historySearch');
+    const table = document.getElementById('historyTable');
+
+    if (searchInput && table) {
+        searchInput.addEventListener('keyup', function () {
+            const query = searchInput.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+    }
+</script>
+{% endblock %}

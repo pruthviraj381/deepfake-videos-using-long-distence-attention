@@ -1,24 +1,22 @@
+
+# Python environment
 .venv/
-__pycache__/
-uploads/*
-!uploads/.gitkeep
-checkpoints/*.pth
-dataset/**/*.mp4
-dataset/**/*.avi
-dataset/**/*.mov
-dataset/**/*.mkv
-# Downloaded video datasets
-FaceForensics_fake/
-FaceForensics_original/
-
-# Video files
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.mpeg
-*.mpg
-
-# Python cache and temporary files
+venv/
 __pycache__/
 *.pyc
+
+# Dataset and uploaded videos
+dataset/
+uploads/
+
+# Local database
+*.db
+*.sqlite3
+
+# Private settings
+.env
+
+# Temporary files
+*.log
+.pytest_cache/
+.vscode/
